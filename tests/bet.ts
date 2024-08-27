@@ -3,20 +3,38 @@ import { Program } from "@coral-xyz/anchor";
 import { Bet } from "../target/types/bet";
 
 import { waitForTransaction } from "./helpers";
-import { publicKey } from "@coral-xyz/anchor/dist/cjs/utils";
+
+import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { expect } from "chai"; 
 
+import { Keypair, LAMPORTS_PER_SOL, sendAndConfirmTransaction, Transaction } from "@solana/web3.js";
+import { BN } from "bn.js";
 describe("bet", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
   const program = anchor.workspace.Bet as Program<Bet>;
-
   const connection = anchor.getProvider().connection;
-
   const owner = anchor.AnchorProvider.env().wallet; 
   const user1 = anchor.web3.Keypair.generate();
   const user2 = anchor.web3.Keypair.generate();
+  const fee_receiver = anchor.web3.Keypair.generate();
+
+  it("Bet initialized!", async () => { 
+    const tx = await program.methods.initialize().rpc();
+    console.log("Your transaction signature", tx);
+    await waitForTransaction(connection, tx );
+
+    const betAccount = PublicKey.findProgramAddressSync(
+      [Buffer.from("bet")], program.programId
+    )[0];
+
+    const betData = await program.account.bet.fetch(betAccount)
+    expect(betData.amount).equal(0)
+    expect(betData.tails.equals(owner.publicKey))
+    expect(betData.heads.equals(fee_receiver.publicKey))
+    console.log("Program account data: ", betData)
+  });
 
 
   it("Bet created!", async () => {
@@ -39,20 +57,29 @@ describe("bet", () => {
     expect(betData.resolver.equals(owner.publicKey)) 
   });
 
-  it("Bet accepted!", async () => {
-    // Variables necesarias
-    const amount = new anchor.BN(1e9); // 1 SOL en lamports
-    const isHeads = false; // El usuario acepta la apuesta por "tails"
+  it("Bet accepted!", async () => { 
+  });
 
-    // Determinar la cuenta de la apuesta utilizando el bet_id
+  it("Bet resolved!", async () => { 
+  });
+
+  it("Bet canceled!", async () => { 
+  });
+
+  it("Bet closed!", async () => { 
     /*
-    const [program, _] = await publicKey.findProgramAddress(
-      [Buffer.from("bet")], 
-      program.programId
-    );
-    */
+    const tx = await program.methods
+    .close()
+    .accountsPartial({
+      user: provider.wallet.publicKey,
+      vaultState,
+      vault,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .rpc();
 
-    //   creamos una apuesta
-    // todo
+    console.log("\nYour transaction signature", tx);
+    console.log("Your vault info", (await provider.connection.getAccountInfo(vault)));
+  */
   });
 });
